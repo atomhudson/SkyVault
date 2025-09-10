@@ -3,9 +3,10 @@
 import { createAdminClient } from "@/lib/appwrite";
 import { InputFile } from "node-appwrite/file";
 import { appwriteConfig } from "@/lib/appwrite/config";
-import { ID } from "node-appwrite";
+import { ID, Models, Query } from "node-appwrite";
 import { constructFileUrl, getFileType, parseStringify } from "@/lib/utils";
 import { revalidatePath } from "next/cache";
+import { getCurrentUser } from "@/lib/actions/user.actions";
 
 const handleError = (error: unknown, message: string) => {
   console.log(error, message);
@@ -15,8 +16,10 @@ const handleError = (error: unknown, message: string) => {
 export const uploadFile = async ({
   file,
   ownerId,
+  accountId,
   path,
-}: Omit<UploadFileProps, 'accountId'>) => {
+}: UploadFileProps) => {
+  console.log("uploadFile: ", accountId, ownerId, path);
   const { storage, databases } = await createAdminClient();
 
   try {
@@ -35,6 +38,7 @@ export const uploadFile = async ({
       extension: getFileType(bucketFile.name).extension,
       size: bucketFile.sizeOriginal,
       owner: ownerId,
+      accountId,
       users: [],
       bucketFileId: bucketFile.$id,
     };
@@ -56,6 +60,32 @@ export const uploadFile = async ({
   } catch (error) {
     handleError(error, "Failed to upload file");
   }
+};
+
+export const getFiles = async () => {
+  const { databases } = await createAdminClient();
+  try {
+    const currentUser = await getCurrentUser();
+    if (!currentUser) throw new Error("User not found");
+    const queries = createQueries(currentUser);
+    const files = await databases.listDocuments(
+      appwriteConfig.databaseId,
+      appwriteConfig.filesTable,
+      queries,
+    );
+    return parseStringify(files);
+  } catch (error) {
+    handleError(error, "Failed to get files");
+  }
+};
+const createQueries = (currentUser: Models.Document) => {
+  const queries = [
+    Query.or([
+      Query.equal("owner", [currentUser.$id]),
+      Query.contains("users", [currentUser.email]),
+    ]),
+  ];
+  return queries;
 };
 
 // const createQueries = (
@@ -114,13 +144,13 @@ export const uploadFile = async ({
 //     handleError(error, "Failed to get files");
 //   }
 // };
-//
+
 // export const renameFile = async ({
-//   fileId,
-//   name,
-//   extension,
-//   path,
-// }: RenameFileProps) => {
+//                                    fileId,
+//                                    name,
+//                                    extension,
+//                                    path,
+//                                  }: RenameFileProps) => {
 //   const { databases } = await createAdminClient();
 //
 //   try {
@@ -140,12 +170,12 @@ export const uploadFile = async ({
 //     handleError(error, "Failed to rename file");
 //   }
 // };
-//
+
 // export const updateFileUsers = async ({
-//   fileId,
-//   emails,
-//   path,
-// }: UpdateFileUsersProps) => {
+//                                         fileId,
+//                                         emails,
+//                                         path,
+//                                       }: UpdateFileUsersProps) => {
 //   const { databases } = await createAdminClient();
 //
 //   try {
@@ -164,12 +194,12 @@ export const uploadFile = async ({
 //     handleError(error, "Failed to rename file");
 //   }
 // };
-//
+
 // export const deleteFile = async ({
-//   fileId,
-//   bucketFileId,
-//   path,
-// }: DeleteFileProps) => {
+//                                    fileId,
+//                                    bucketFileId,
+//                                    path,
+//                                  }: DeleteFileProps) => {
 //   const { databases, storage } = await createAdminClient();
 //
 //   try {
@@ -189,8 +219,8 @@ export const uploadFile = async ({
 //     handleError(error, "Failed to rename file");
 //   }
 // };
-//
-// // ============================== TOTAL FILE SPACE USED
+
+// ============================== TOTAL FILE SPACE USED
 // export async function getTotalSpaceUsed() {
 //   try {
 //     const { databases } = await createSessionClient();
