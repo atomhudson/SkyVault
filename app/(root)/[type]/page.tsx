@@ -3,7 +3,8 @@ import Sort from "@/components/Sort";
 import { getFiles } from "@/lib/actions/files.actions";
 import { Models } from "node-appwrite";
 import Card from "@/components/Card";
-import { getFileTypesParams } from "@/lib/utils";
+import { getFileTypesParams, convertFileSize } from "@/lib/utils";
+import { getTotalSpaceUsed } from "@/lib/actions/files.actions";
 
 const Page = async ({ searchParams, params }: SearchParamProps) => {
   const type = ((await params)?.type as string) || "";
@@ -14,6 +15,25 @@ const Page = async ({ searchParams, params }: SearchParamProps) => {
 
   const files = await getFiles({ types, searchText, sort });
 
+  const totalSpace = await getTotalSpaceUsed();
+  let totalForType = 0;
+  switch (type) {
+    case "documents":
+      totalForType = totalSpace?.document?.size || 0;
+      break;
+    case "images":
+      totalForType = totalSpace?.image?.size || 0;
+      break;
+    case "media":
+      totalForType = (totalSpace?.video?.size || 0) + (totalSpace?.audio?.size || 0);
+      break;
+    case "others":
+      totalForType = totalSpace?.other?.size || 0;
+      break;
+    default:
+      totalForType = 0;
+  }
+
   return (
     <div className="page-container">
       <section className="w-full">
@@ -21,7 +41,7 @@ const Page = async ({ searchParams, params }: SearchParamProps) => {
 
         <div className="total-size-section">
           <p className="body-1">
-            Total: <span className="h5">0 MB</span>
+            Total: <span className="h5">{convertFileSize(totalForType)}</span>
           </p>
 
           <div className="sort-container">
