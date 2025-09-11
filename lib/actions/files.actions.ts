@@ -19,7 +19,6 @@ export const uploadFile = async ({
   accountId,
   path,
 }: UploadFileProps) => {
-  console.log("uploadFile: ", accountId, ownerId, path);
   const { storage, databases } = await createAdminClient();
 
   try {
@@ -103,7 +102,6 @@ export const getFiles = async ({
       appwriteConfig.filesTable,
       queries,
     );
-    console.log({ files });
     return parseStringify(files);
   } catch (error) {
     handleError(error, "Failed to get files");

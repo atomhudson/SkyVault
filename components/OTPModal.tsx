@@ -32,17 +32,18 @@ const OtpModal = ({
   const [isOpen, setIsOpen] = useState(true);
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     setIsLoading(true);
-    console.log({ accountId, password });
+    setError("");
     try {
       const sessionId = await verifySecret({ accountId, password });
-      console.log({ sessionId });
       if (sessionId) router.push("/");
-    } catch (error) {
-      console.log("Failed to verify OTP", error);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      setError(`Something went wrong. Please try again. ${message}`);
     }
     setIsLoading(false);
   };
@@ -72,7 +73,14 @@ const OtpModal = ({
           </AlertDialogDescription>
         </AlertDialogHeader>
 
-        <InputOTP maxLength={6} value={password} onChange={setPassword}>
+        <InputOTP
+          maxLength={6}
+          value={password}
+          onChange={(value) => {
+            setPassword(value);
+            setError("");
+          }}
+        >
           <InputOTPGroup className="shad-otp">
             <InputOTPSlot index={0} className="shad-otp-slot" />
             <InputOTPSlot index={1} className="shad-otp-slot" />
@@ -82,6 +90,10 @@ const OtpModal = ({
             <InputOTPSlot index={5} className="shad-otp-slot" />
           </InputOTPGroup>
         </InputOTP>
+
+        {error && (
+          <div className="subtitle-2 mt-2 text-center text-red">{error}</div>
+        )}
 
         <AlertDialogFooter>
           <div className="flex w-full flex-col gap-4">
