@@ -20,16 +20,13 @@ export const uploadFile = async ({
   path,
 }: UploadFileProps) => {
   const { storage, databases } = await createAdminClient();
-
   try {
     const inputFile = InputFile.fromBuffer(file, file.name);
-
     const bucketFile = await storage.createFile(
       appwriteConfig.bucketId,
       ID.unique(),
       inputFile,
     );
-
     const fileDocument = {
       type: getFileType(bucketFile.name).type,
       name: bucketFile.name,
@@ -41,7 +38,6 @@ export const uploadFile = async ({
       users: [],
       bucketFileId: bucketFile.$id,
     };
-
     const newFile = await databases
       .createDocument(
         appwriteConfig.databaseId,
@@ -53,7 +49,6 @@ export const uploadFile = async ({
         await storage.deleteFile(appwriteConfig.bucketId, bucketFile.$id);
         handleError(error, "Failed to create file document");
       });
-
     revalidatePath(path);
     return parseStringify(newFile);
   } catch (error) {
@@ -115,7 +110,6 @@ export const renameFile = async ({
   path,
 }: RenameFileProps) => {
   const { databases } = await createAdminClient();
-
   try {
     const newName = `${name}.${extension}`;
     const updatedFile = await databases.updateDocument(
@@ -195,7 +189,7 @@ export async function getTotalSpaceUsed() {
       audio: { size: 0, latestDate: "" },
       other: { size: 0, latestDate: "" },
       used: 0,
-      all: 2 * 1024 * 1024 * 1024 /* 2GB available bucket storage */,
+      all: 2 * 1024 * 1024 * 1024,
     };
     files.documents.forEach((file) => {
       const fileType = file.type as FileType;
